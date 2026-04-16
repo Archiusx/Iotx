@@ -89,10 +89,14 @@ export const AITutor: React.FC = () => {
   const syncAnalyze = async (customPrompt?: string) => {
     if (isLoading) return;
     setIsLoading(true);
+    
+    // Add a temporary "system" message for status
+    const statusMsgId = Date.now();
     setMessages(prev => [...prev, { 
       role: 'assistant', 
-      content: customPrompt ? `Analyzing specific request: "${customPrompt}"...` : "SyncOS Intelligence Core activated. 🧠 Scanning all active sandboxes for cross-window context..." 
-    }]);
+      content: customPrompt ? `🔍 Analyzing request: "${customPrompt}"...` : "🧠 Syncing workspace context...",
+      id: statusMsgId
+    } as any]);
 
     const contextData: any[] = [];
     const handleContextResponse = (e: any) => {
@@ -109,7 +113,7 @@ export const AITutor: React.FC = () => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: customPrompt 
           ? `USER REQUEST: ${customPrompt}\n\nWORKSPACE CONTEXT:\n${globalContext}\n\nIMPORTANT: If a URL is provided in the context, use your Google Search tool to fetch and analyze its real-time content to provide an accurate response. Do not hallucinate content.`
           : `Analyze the following workspace context and provide a unified summary or study plan. 
@@ -131,16 +135,28 @@ export const AITutor: React.FC = () => {
       });
 
       const responseText = response.text;
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: responseText || "Analysis complete." 
-      }]);
+      
+      // Replace the status message with the actual response
+      setMessages(prev => {
+        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
+        return [...filtered, { 
+          role: 'assistant', 
+          content: responseText || "Analysis complete." 
+        }];
+      });
     } catch (error) {
       console.error("Sync-Analysis Failed:", error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `Sync-Analysis failed. Error: ${error instanceof Error ? error.message : "Possible API Key or Connectivity issue"}. \n\nIf you are on Vercel, ensure VITE_GEMINI_API_KEY is correctly set in your environment variables.` 
-      }]);
+      const isQuota = error instanceof Error && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));
+      
+      setMessages(prev => {
+        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
+        return [...filtered, { 
+          role: 'assistant', 
+          content: isQuota 
+            ? "⚠️ **Usage Limit Reached.** You've hit the Gemini API quota. Please wait a minute before trying again or check your Vercel VITE_GEMINI_API_KEY."
+            : `❌ **Sync-Analysis failed.** ${error instanceof Error ? "The model is currently busy. Please try again soon." : "Connectivity issue"}.`
+        }];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -236,7 +252,7 @@ export const AITutor: React.FC = () => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -289,7 +305,7 @@ export const AITutor: React.FC = () => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: userMessage + context,
         config: {
           systemInstruction: "You are a helpful AI Tutor. You have access to the student's notes and workspace context. If the user mentions a website or is looking at one, use your search tool to analyze it. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts.",

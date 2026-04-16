@@ -85,11 +85,11 @@ export const Window: React.FC<WindowProps> = ({
           : (isSmallScreen ? '95%' : size?.width || 800);
         const h = typeof size?.height === 'number' 
           ? Math.min(size.height, window.innerHeight - 100) 
-          : (isSmallScreen ? '80%' : size?.height || 600);
+          : (isSmallScreen ? '85%' : size?.height || 600); // Taller on mobile for better visibility
         return { 
           width: w, 
           height: h,
-          borderRadius: 8
+          borderRadius: isSmallScreen ? 12 : 8
         };
     }
   };
@@ -106,10 +106,16 @@ export const Window: React.FC<WindowProps> = ({
       case 'bottom-left': return { x: 0, y: window.innerHeight / 2 - 24 };
       case 'bottom-right': return { x: window.innerWidth / 2, y: window.innerHeight / 2 - 24 };
       default: 
-        // Centering on mobile if not specified
-        const defaultX = isSmallScreen ? (window.innerWidth * 0.025) : 40;
-        const defaultY = isSmallScreen ? 10 : 40;
-        return { x: position?.x ?? defaultX, y: position?.y ?? defaultY };
+        // Improved centering on mobile and small devices
+        if (isSmallScreen) {
+          const w = typeof size?.width === 'number' ? size.width : (window.innerWidth * 0.95);
+          const h = typeof size?.height === 'number' ? size.height : (window.innerHeight * 0.7);
+          return { 
+            x: (window.innerWidth - w) / 2, 
+            y: Math.max(10, (window.innerHeight - h - 60) / 2) 
+          };
+        }
+        return { x: position?.x ?? 40, y: position?.y ?? 40 };
     }
   };
 
