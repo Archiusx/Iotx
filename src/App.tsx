@@ -41,6 +41,7 @@ function Desktop() {
   const [maxZIndex, setMaxZIndex] = useState(100);
   const [isScanning, setIsScanning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const scanningTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -49,14 +50,17 @@ function Desktop() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ... inside Desktop component
   React.useEffect(() => {
     const handleRequestContext = () => {
+      if (scanningTimeoutRef.current) clearTimeout(scanningTimeoutRef.current);
       setIsScanning(true);
-      setTimeout(() => setIsScanning(false), 1500);
+      scanningTimeoutRef.current = setTimeout(() => setIsScanning(false), 1500);
     };
     window.addEventListener('syncos-request-context', handleRequestContext);
-    return () => window.removeEventListener('syncos-request-context', handleRequestContext);
+    return () => {
+      window.removeEventListener('syncos-request-context', handleRequestContext);
+      if (scanningTimeoutRef.current) clearTimeout(scanningTimeoutRef.current);
+    };
   }, []);
 
   const launchApp = useCallback((id: AppId) => {
@@ -204,37 +208,7 @@ function Desktop() {
     return () => window.removeEventListener('syncos-study-mode', handleStudyMode);
   }, [launchApp]);
 
-  if (loading) return <div className="h-screen w-screen bg-[#004a86] flex items-center justify-center text-white">Loading SyncOS...</div>;
-
-  if (!user) {
-    return (
-      <div className="h-screen w-screen overflow-hidden relative bg-[#004a86] flex items-center justify-center">
-        <img 
-          src="https://images.unsplash.com/photo-1620121692029-d088224efc74?q=80&w=2832&auto=format&fit=crop" 
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover blur-sm brightness-50"
-          referrerPolicy="no-referrer"
-        />
-        <div className="relative z-10 mica p-12 rounded-2xl win-shadow flex flex-col items-center gap-6 max-w-sm w-full">
-          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Windows_logo_-_2021.svg" alt="SyncOS" className="w-12 h-12" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-white">Welcome to SyncOS</h1>
-            <p className="text-white/60 text-sm mt-1">Sign in to sync your workspace</p>
-          </div>
-          <button 
-            onClick={signIn}
-            className="w-full bg-white text-blue-600 font-bold py-3 rounded-xl hover:bg-white/90 transition-all flex items-center justify-center gap-2"
-          >
-            <LogIn size={20} />
-            Sign in with Google
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Stable Prototype: Render immediately without loading/login gates
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-[#004a86]">
       <img 

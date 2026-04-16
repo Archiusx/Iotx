@@ -78,6 +78,7 @@ export const AITutor: React.FC = () => {
   };
 
   const syncAnalyze = async (customPrompt?: string) => {
+    if (isLoading) return;
     setIsLoading(true);
     setMessages(prev => [...prev, { 
       role: 'assistant', 

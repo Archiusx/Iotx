@@ -13,32 +13,41 @@ interface AuthContextType {
 const AuthContext = React.createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>({
+    uid: 'guest-student',
+    displayName: 'Guest Student',
+    email: 'guest@syncos.edu',
+  } as any);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const path = `users/${user.uid}`;
+    const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
+      if (authenticatedUser) {
+        const path = `users/${authenticatedUser.uid}`;
         try {
           // Sync user to Firestore
-          const userRef = doc(db, 'users', user.uid);
+          const userRef = doc(db, 'users', authenticatedUser.uid);
           const userSnap = await getDoc(userRef);
           
           if (!userSnap.exists()) {
             await setDoc(userRef, {
-              uid: user.uid,
-              displayName: user.displayName,
-              email: user.email,
+              uid: authenticatedUser.uid,
+              displayName: authenticatedUser.displayName,
+              email: authenticatedUser.email,
               lastActive: new Date().toISOString()
             });
           }
-          setUser(user);
+          setUser(authenticatedUser);
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, path);
         }
       } else {
-        setUser(null);
+        // Keep mock user for prototyping if no one is logged in
+        setUser({
+          uid: 'guest-student',
+          displayName: 'Guest Student',
+          email: 'guest@syncos.edu',
+        } as any);
       }
       setLoading(false);
     });
