@@ -62,8 +62,16 @@ export const Window: React.FC<WindowProps> = ({
 
   const getLayout = () => {
     if (isMaximized) {
-      return { width: '100%', height: 'calc(100% - 48px)', borderRadius: 0 };
+      return { 
+        width: '100%', 
+        height: 'calc(100% - 48px)', // Account for taskbar
+        borderRadius: 0 
+      };
     }
+    
+    // Safety check for mobile
+    const isSmallScreen = window.innerWidth < 768;
+    
     switch (snapState) {
       case 'left': return { width: '50%', height: 'calc(100% - 48px)', borderRadius: 0 };
       case 'right': return { width: '50%', height: 'calc(100% - 48px)', borderRadius: 0 };
@@ -71,16 +79,25 @@ export const Window: React.FC<WindowProps> = ({
       case 'top-right': return { width: '50%', height: 'calc(50% - 24px)', borderRadius: 0 };
       case 'bottom-left': return { width: '50%', height: 'calc(50% - 24px)', borderRadius: 0 };
       case 'bottom-right': return { width: '50%', height: 'calc(50% - 24px)', borderRadius: 0 };
-      default: return { 
-        width: size?.width || 800, 
-        height: size?.height || 600,
-        borderRadius: 8
-      };
+      default: 
+        const w = typeof size?.width === 'number' 
+          ? Math.min(size.width, window.innerWidth - (isSmallScreen ? 10 : 40)) 
+          : (isSmallScreen ? '95%' : size?.width || 800);
+        const h = typeof size?.height === 'number' 
+          ? Math.min(size.height, window.innerHeight - 100) 
+          : (isSmallScreen ? '80%' : size?.height || 600);
+        return { 
+          width: w, 
+          height: h,
+          borderRadius: 8
+        };
     }
   };
 
   const getAnimatePosition = () => {
     if (isMaximized) return { x: 0, y: 0 };
+    const isSmallScreen = window.innerWidth < 768;
+    
     switch (snapState) {
       case 'left': return { x: 0, y: 0 };
       case 'right': return { x: window.innerWidth / 2, y: 0 };
@@ -88,7 +105,11 @@ export const Window: React.FC<WindowProps> = ({
       case 'top-right': return { x: window.innerWidth / 2, y: 0 };
       case 'bottom-left': return { x: 0, y: window.innerHeight / 2 - 24 };
       case 'bottom-right': return { x: window.innerWidth / 2, y: window.innerHeight / 2 - 24 };
-      default: return { x: position?.x ?? 40, y: position?.y ?? 40 };
+      default: 
+        // Centering on mobile if not specified
+        const defaultX = isSmallScreen ? (window.innerWidth * 0.025) : 40;
+        const defaultY = isSmallScreen ? 10 : 40;
+        return { x: position?.x ?? defaultX, y: position?.y ?? defaultY };
     }
   };
 

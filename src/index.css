@@ -14,10 +14,18 @@
 @layer components {
   .mica {
     @apply bg-white/70 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg transition-all duration-300;
+    will-change: transform, opacity;
   }
   
   .mica-dark {
     @apply bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl;
+    will-change: transform, opacity;
+  }
+
+  /* Butter Smooth Transitions */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    @apply antialiased;
   }
 
   .win-shadow {
@@ -26,6 +34,8 @@
 
   .win-button {
     @apply transition-all duration-200 active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 rounded-md p-2;
+    min-height: 44px; /* Better touch targets for mobile */
+    min-width: 44px;
   }
 
   /* Markdown Styling */

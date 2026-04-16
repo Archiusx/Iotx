@@ -8,7 +8,16 @@ import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const getApiKey = () => {
+  return (
+    process.env.GEMINI_API_KEY || 
+    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+    ''
+  );
+};
+
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey });
 
 interface Message {
   role: 'user' | 'assistant';
@@ -61,10 +70,10 @@ export const AITutor: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!apiKey) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "⚠️ GEMINI_API_KEY is missing. Please add it to your environment variables to enable AI features." 
+        content: "⚠️ GEMINI_API_KEY is missing. In Vercel, please set VITE_GEMINI_API_KEY in your environment variables." 
       }]);
     }
   }, []);
@@ -117,16 +126,21 @@ export const AITutor: React.FC = () => {
         6. Acknowledge specific windows you've read (e.g., "I see you're researching Calculus on Wikipedia while taking notes in Notepad").`,
         config: {
           systemInstruction: "You are the SyncOS Intelligence Core. You have unique access to all open windows. Your goal is to synthesize information across apps. If the user is looking at a webpage, use your search tool to understand its content. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts. Be concise but highly insightful.",
-          tools: [{ googleSearch: {} }]
+          tools: [{ googleSearch: {} }] as any
         },
       });
 
+      const responseText = response.text;
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: response.text || "Analysis complete." 
+        content: responseText || "Analysis complete." 
       }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sync-Analysis failed. Please check your connection." }]);
+      console.error("Sync-Analysis Failed:", error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `Sync-Analysis failed. Error: ${error instanceof Error ? error.message : "Possible API Key or Connectivity issue"}. \n\nIf you are on Vercel, ensure VITE_GEMINI_API_KEY is correctly set in your environment variables.` 
+      }]);
     } finally {
       setIsLoading(false);
     }

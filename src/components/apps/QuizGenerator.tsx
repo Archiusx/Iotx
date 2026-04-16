@@ -3,7 +3,16 @@ import { BrainCircuit, Send, CheckCircle, XCircle, RefreshCw, Zap } from 'lucide
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '@/lib/utils';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const getApiKey = () => {
+  return (
+    process.env.GEMINI_API_KEY || 
+    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+    ''
+  );
+};
+
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey });
 
 interface Question {
   question: string;
