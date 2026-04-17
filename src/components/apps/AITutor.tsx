@@ -9,10 +9,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const getApiKey = () => {
-  // Priority: Vite env (Vercel client) > process env (local/server sync)
   return (
+    process.env.GEMINI_API_KEY || 
     (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-    (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '') ||
     ''
   );
 };
@@ -91,11 +90,11 @@ export const AITutor: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
     
-    // Add a temporary "system" message for status
+    // Status tracking for replacing later
     const statusMsgId = Date.now();
     setMessages(prev => [...prev, { 
       role: 'assistant', 
-      content: customPrompt ? `🔍 Analyzing request: "${customPrompt}"...` : "🧠 Syncing workspace context...",
+      content: customPrompt ? `🔍 Analyzing request...` : "🧠 Syncing workspace context...",
       id: statusMsgId
     } as any]);
 
@@ -106,40 +105,51 @@ export const AITutor: React.FC = () => {
     window.addEventListener('syncos-context-response', handleContextResponse);
     window.dispatchEvent(new CustomEvent('syncos-request-context'));
 
-    // Ultra-fast real-time scan
+    // Fast real-time scan
     await new Promise(resolve => setTimeout(resolve, 400));
     window.removeEventListener('syncos-context-response', handleContextResponse);
 
-    const globalContext = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
+    // If it's an explicit browser request, prioritize that window alone unless more is needed.
+    const isBrowserRequest = customPrompt?.includes('currently viewing this page:');
+    let contextToUse = "";
+    
+    if (isBrowserRequest) {
+      // Find the browser context specifically
+      const browserCtx = contextData.find(c => c.name === 'Browser' || c.name === 'Edge Browser');
+      if (browserCtx) {
+        contextToUse = `PRIMARY WINDOW CONTEXT:\n${browserCtx.content}`;
+      } else {
+        contextToUse = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
+      }
+    } else {
+      contextToUse = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
+    }
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.1-flash-lite-preview",
         contents: customPrompt 
-          ? `USER REQUEST: ${customPrompt}\n\nWORKSPACE CONTEXT:\n${globalContext}\n\nIMPORTANT: If a URL is provided in the context, use your Google Search tool to fetch and analyze its real-time content to provide an accurate response. Do not hallucinate content.`
+          ? `${customPrompt}\n\nCONTEXT FROM ACTIVE WINDOWS:\n${contextToUse}\n\nIMPORTANT: Ignore window context that is unrelated to the user's specific query unless it provides helpful cross-reference.`
           : `Analyze the following workspace context and provide a unified summary or study plan. 
         
         CONTEXT FROM ACTIVE WINDOWS:
-        ${globalContext}
+        ${contextToUse}
         
         FORMATTING RULES:
-        1. Use Markdown TABLES for all comparisons or data sets.
-        2. Use Markdown HEADERS (#, ##, ###) for sections.
-        3. Use bullet points for lists.
-        4. CRITICAL: Do NOT use raw ** symbols for bolding. Use Headers instead.
-        5. If possible, create a text-based "DIAGRAM" or "FLOWCHART" using characters like | -> -- if it helps explain a process.
-        6. Acknowledge specific windows you've read (e.g., "I see you're researching Calculus on Wikipedia while taking notes in Notepad").`,
+        1. Use Markdown TABLES for all comparisons available.
+        2. Use Markdown HEADERS for structure.
+        3. Use bullet points.
+        4. Focus on synthesizing cross-app information.`,
         config: {
-          systemInstruction: "You are the SyncOS Intelligence Core. You have unique access to all open windows. Your goal is to synthesize information across apps. If the user is looking at a webpage, use your search tool to understand its content. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts. Be concise but highly insightful.",
+          systemInstruction: "You are the SyncOS Intelligence Core. You have access to user windows. Focus on the user's specific query. Use the search tool to analyze URL content if a URL is provided. Be concise and structured.",
           tools: [{ googleSearch: {} }] as any
         },
       });
 
       const responseText = response.text;
       
-      // Replace the status message with the actual response
       setMessages(prev => {
-        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
+        const filtered = prev.filter((m: any) => (m as any).id !== statusMsgId);
         return [...filtered, { 
           role: 'assistant', 
           content: responseText || "Analysis complete." 
@@ -150,12 +160,12 @@ export const AITutor: React.FC = () => {
       const isQuota = error instanceof Error && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));
       
       setMessages(prev => {
-        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
+        const filtered = prev.filter((m: any) => (m as any).id !== statusMsgId);
         return [...filtered, { 
           role: 'assistant', 
           content: isQuota 
-            ? "⚠️ **Usage Limit Reached.** You've hit the Gemini API quota. Please wait a minute before trying again or check your Vercel VITE_GEMINI_API_KEY."
-            : `❌ **Sync-Analysis failed.** ${error instanceof Error ? "The model is currently busy. Please try again soon." : "Connectivity issue"}.`
+            ? "⚠️ **Usage Limit Reached.** Please wait a moment."
+            : `❌ **Call failed.** Please try again.`
         }];
       });
     } finally {
@@ -302,14 +312,16 @@ export const AITutor: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    const context = await getContext();
+    // Only pull external context if explicitly requested
+    const needsSync = ["sync", "notes", "notepad", "workspace", "read my"].some(kw => userMessage.toLowerCase().includes(kw));
+    const context = needsSync ? await getContext() : "";
 
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
-        contents: userMessage + context,
+        contents: userMessage + (context ? `\n\nATTACHED CONTEXT:\n${context}` : ""),
         config: {
-          systemInstruction: "You are a helpful AI Tutor. You have access to the student's notes and workspace context. If the user mentions a website or is looking at one, use your search tool to analyze it. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts.",
+          systemInstruction: "You are a helpful AI Tutor. You only have context if the user explicitly attaches it or asks for a sync. If they mention a specific website, use the search tool. Keep responses concise and insightful.",
           tools: [{ googleSearch: {} }]
         },
       });

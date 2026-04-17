@@ -4,10 +4,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '@/lib/utils';
 
 const getApiKey = () => {
-  // Priority: Vite env (Vercel client) > process env (local/server sync)
   return (
+    process.env.GEMINI_API_KEY || 
     (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-    (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '') ||
     ''
   );
 };
@@ -60,7 +59,7 @@ export const QuizGenerator: React.FC = () => {
     if (globalContext) {
       try {
         const response = await ai.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-3.1-flash-lite-preview",
           contents: `Based on the following workspace context, suggest a specific academic topic for a quiz. Return ONLY the topic name.\n\nCONTEXT:\n${globalContext}`,
         });
         const suggestedTopic = response.text.trim();
@@ -85,7 +84,7 @@ export const QuizGenerator: React.FC = () => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.1-flash-lite-preview",
         contents: `Generate a 5-question multiple choice quiz about ${activeTopic}. Return as JSON.`,
         config: {
           responseMimeType: "application/json",
