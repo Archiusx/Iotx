@@ -9,9 +9,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const getApiKey = () => {
+  // Priority: Vite env (Vercel client) > process env (local/server sync)
   return (
-    process.env.GEMINI_API_KEY || 
     (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+    (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '') ||
     ''
   );
 };
@@ -113,7 +114,7 @@ export const AITutor: React.FC = () => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
+        model: "gemini-1.5-flash",
         contents: customPrompt 
           ? `USER REQUEST: ${customPrompt}\n\nWORKSPACE CONTEXT:\n${globalContext}\n\nIMPORTANT: If a URL is provided in the context, use your Google Search tool to fetch and analyze its real-time content to provide an accurate response. Do not hallucinate content.`
           : `Analyze the following workspace context and provide a unified summary or study plan. 
