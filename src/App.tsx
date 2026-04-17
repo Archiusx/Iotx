@@ -212,7 +212,7 @@ function Desktop() {
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-[#004a86]">
       <img 
-        src="https://images.unsplash.com/photo-1620121692029-d088224efc74?q=80&w=2832&auto=format&fit=crop" 
+        src="https://wallpapers.ispazio.net/wp-content/uploads/2021/10/ispazio-2-1280x2770.jpg" 
         alt="Background"
         className="absolute inset-0 w-full h-full object-cover"
         referrerPolicy="no-referrer"
