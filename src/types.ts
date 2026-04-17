@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type AppId = 'ai-tutor' | 'notepad' | 'browser' | 'syllabus' | 'quiz' | 'settings';
+export type AppId = 'ai-tutor' | 'notepad' | 'browser' | 'syllabus' | 'quiz' | 'settings' | 'system-monitor';
 
 export type SnapState = 'none' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 

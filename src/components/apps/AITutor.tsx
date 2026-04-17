@@ -28,14 +28,40 @@ interface Message {
 
 export const AITutor: React.FC = () => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hello! I'm your SyncOS AI Tutor. I can now see your notes and help you generate study modules like pointwise notes, flashcards, or tests. What are we studying today?" }
-  ]);
+  
+  // Diversified Settings State
+  const [isDiverse, setIsDiverse] = useState(() => {
+    const saved = localStorage.getItem('syncos-diversity');
+    return saved ? JSON.parse(saved) : true; // Default to Diverse
+  });
+  
+  const [isSyncingPast, setIsSyncingPast] = useState(true);
+
+  // Load messages from local storage for "Past Data Synchronization"
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('syncos-messages');
+    return saved ? JSON.parse(saved) : [
+      { role: 'assistant', content: "Hello! I'm your SyncOS AI Tutor. I'm currently synchronized with your workspace and past data. How can I assist you today?" }
+    ];
+  });
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Persist messages
+  useEffect(() => {
+    if (isSyncingPast) {
+      localStorage.setItem('syncos-messages', JSON.stringify(messages));
+    }
+  }, [messages, isSyncingPast]);
+
+  // Persist diversity setting
+  useEffect(() => {
+    localStorage.setItem('syncos-diversity', JSON.stringify(isDiverse));
+  }, [isDiverse]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -90,11 +116,11 @@ export const AITutor: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
     
-    // Status tracking for replacing later
+    // Add a temporary "system" message for status
     const statusMsgId = Date.now();
     setMessages(prev => [...prev, { 
       role: 'assistant', 
-      content: customPrompt ? `🔍 Analyzing request...` : "🧠 Syncing workspace context...",
+      content: customPrompt ? `🔍 Analyzing request: "${customPrompt}"...` : "🧠 Syncing workspace context...",
       id: statusMsgId
     } as any]);
 
@@ -105,51 +131,43 @@ export const AITutor: React.FC = () => {
     window.addEventListener('syncos-context-response', handleContextResponse);
     window.dispatchEvent(new CustomEvent('syncos-request-context'));
 
-    // Fast real-time scan
+    // Ultra-fast real-time scan
     await new Promise(resolve => setTimeout(resolve, 400));
     window.removeEventListener('syncos-context-response', handleContextResponse);
 
-    // If it's an explicit browser request, prioritize that window alone unless more is needed.
-    const isBrowserRequest = customPrompt?.includes('currently viewing this page:');
-    let contextToUse = "";
-    
-    if (isBrowserRequest) {
-      // Find the browser context specifically
-      const browserCtx = contextData.find(c => c.name === 'Browser' || c.name === 'Edge Browser');
-      if (browserCtx) {
-        contextToUse = `PRIMARY WINDOW CONTEXT:\n${browserCtx.content}`;
-      } else {
-        contextToUse = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
-      }
-    } else {
-      contextToUse = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
-    }
+    const globalContext = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
 
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
         contents: customPrompt 
-          ? `${customPrompt}\n\nCONTEXT FROM ACTIVE WINDOWS:\n${contextToUse}\n\nIMPORTANT: Ignore window context that is unrelated to the user's specific query unless it provides helpful cross-reference.`
+          ? `USER REQUEST: ${customPrompt}\n\nWORKSPACE CONTEXT:\n${globalContext}\n\nIMPORTANT: If a URL is provided in the context, use your Google Search tool to fetch and analyze its real-time content to provide an accurate response. Do not hallucinate content.`
           : `Analyze the following workspace context and provide a unified summary or study plan. 
         
         CONTEXT FROM ACTIVE WINDOWS:
-        ${contextToUse}
+        ${globalContext}
+
+        PERSISTENT SESSION CONTEXT (PAST DATA):
+        ${isSyncingPast ? messages.slice(-5).map(m => `${m.role}: ${m.content}`).join("\n") : "Disabled"}
         
         FORMATTING RULES:
-        1. Use Markdown TABLES for all comparisons available.
-        2. Use Markdown HEADERS for structure.
-        3. Use bullet points.
-        4. Focus on synthesizing cross-app information.`,
+        1. Use Markdown TABLES for all comparisons or data sets.
+        2. Use Markdown HEADERS (#, ##, ###) for sections.
+        3. Use bullet points for lists.
+        4. CRITICAL: Do NOT use raw ** symbols for bolding. Use Headers instead.
+        5. If possible, create a text-based "DIAGRAM" or "FLOWCHART" using characters like | -> -- if it helps explain a process.
+        6. Acknowledge specific windows you've read (e.g., "I see you're researching Calculus on Wikipedia while taking notes in Notepad").`,
         config: {
-          systemInstruction: "You are the SyncOS Intelligence Core. You have access to user windows. Focus on the user's specific query. Use the search tool to analyze URL content if a URL is provided. Be concise and structured.",
+          systemInstruction: `You are the SyncOS Intelligence Core. ${isDiverse ? "Be creative and proactive. Suggest diverse ways to use the context." : "Be strictly logical and concise. Focus on efficient memory utilization."} You have unique access to all open windows. Your goal is to synthesize information across apps. If the user is looking at a webpage, use your search tool to understand its content. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts. Be concise but highly insightful.`,
           tools: [{ googleSearch: {} }] as any
         },
       });
 
       const responseText = response.text;
       
+      // Replace the status message with the actual response
       setMessages(prev => {
-        const filtered = prev.filter((m: any) => (m as any).id !== statusMsgId);
+        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
         return [...filtered, { 
           role: 'assistant', 
           content: responseText || "Analysis complete." 
@@ -160,12 +178,12 @@ export const AITutor: React.FC = () => {
       const isQuota = error instanceof Error && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));
       
       setMessages(prev => {
-        const filtered = prev.filter((m: any) => (m as any).id !== statusMsgId);
+        const filtered = prev.filter((m: any) => m.id !== statusMsgId);
         return [...filtered, { 
           role: 'assistant', 
           content: isQuota 
-            ? "⚠️ **Usage Limit Reached.** Please wait a moment."
-            : `❌ **Call failed.** Please try again.`
+            ? "⚠️ **Usage Limit Reached.** You've hit the Gemini API quota. Please wait a minute before trying again or check your Vercel VITE_GEMINI_API_KEY."
+            : `❌ **Sync-Analysis failed.** ${error instanceof Error ? "The model is currently busy. Please try again soon." : "Connectivity issue"}.`
         }];
       });
     } finally {
@@ -312,16 +330,14 @@ export const AITutor: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    // Only pull external context if explicitly requested
-    const needsSync = ["sync", "notes", "notepad", "workspace", "read my"].some(kw => userMessage.toLowerCase().includes(kw));
-    const context = needsSync ? await getContext() : "";
+    const context = await getContext();
 
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
-        contents: userMessage + (context ? `\n\nATTACHED CONTEXT:\n${context}` : ""),
+        contents: userMessage + context,
         config: {
-          systemInstruction: "You are a helpful AI Tutor. You only have context if the user explicitly attaches it or asks for a sync. If they mention a specific website, use the search tool. Keep responses concise and insightful.",
+          systemInstruction: `You are a helpful AI Tutor. ${isDiverse ? "Provide diversified insights and creative examples." : "Focus on high-density information for efficient cognitive memory utilization."} You have access to the student's notes and workspace context. If the user mentions a website or is looking at one, use your search tool to analyze it. Format your output beautifully using Markdown tables, headers, and lists. Avoid raw ** symbols; use clean typography and structured layouts.`,
           tools: [{ googleSearch: {} }]
         },
       });
@@ -336,13 +352,36 @@ export const AITutor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
-      <div className="p-4 bg-white dark:bg-gray-800 border-b dark:border-white/10 flex items-center justify-between">
+      <div className="p-4 bg-white dark:bg-gray-800 border-b dark:border-white/10 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="text-blue-600 dark:text-blue-400" size={20} />
-          <h2 className="font-semibold text-gray-800 dark:text-white">OS Intelligence</h2>
+          <Sparkles className={cn("transition-colors", isDiverse ? "text-purple-500" : "text-blue-500")} size={20} />
+          <div className="flex flex-col leading-tight">
+            <h2 className="font-semibold text-gray-800 dark:text-white text-xs">OS Intelligence</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <button 
+                onClick={() => setIsDiverse(!isDiverse)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-tighter border transition-all",
+                  isDiverse ? "bg-purple-500/10 text-purple-600 border-purple-500/20" : "bg-gray-500/10 text-gray-600 border-gray-500/20"
+                )}
+              >
+                {isDiverse ? "Diverse Mode" : "Concise Mode"}
+              </button>
+              <button 
+                onClick={() => setIsSyncingPast(!isSyncingPast)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-tighter border transition-all",
+                  isSyncingPast ? "bg-blue-500/10 text-blue-600 border-blue-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"
+                )}
+              >
+                {isSyncingPast ? "Sync Active" : "Sync Disabled"}
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => syncAnalyze()} className="p-1.5 hover:bg-yellow-50 dark:hover:bg-white/10 rounded-lg text-yellow-600 dark:text-yellow-400 transition-colors animate-pulse" title="Sync-Analyze Workspace"><Zap size={18} /></button>
+        <div className="flex gap-1.5">
+          <button onClick={() => setMessages([{ role: 'assistant', content: "Memory cleared. Workspace sync reset." }])} className="p-1.5 hover:bg-red-50 dark:hover:bg-white/10 rounded-lg text-red-500 transition-colors" title="Clear Memory"><Zap size={14} /></button>
+          <button onClick={() => syncAnalyze()} className="p-1.5 hover:bg-yellow-50 dark:hover:bg-white/10 rounded-lg text-yellow-600 dark:text-yellow-400 transition-colors" title="Sync-Analyze Workspace"><BrainCircuit size={18} /></button>
           <button onClick={enableStudyMode} className="p-1.5 hover:bg-orange-50 dark:hover:bg-white/10 rounded-lg text-orange-600 dark:text-orange-400 transition-colors" title="Study Mode"><BookOpen size={18} /></button>
           <button onClick={() => generateModule('pointwise', 'Current Topic')} className="p-1.5 hover:bg-blue-50 dark:hover:bg-white/10 rounded-lg text-blue-600 dark:text-blue-400 transition-colors" title="Generate Notes"><FileText size={18} /></button>
           <button onClick={() => generateModule('flashcards', 'Current Topic')} className="p-1.5 hover:bg-purple-50 dark:hover:bg-white/10 rounded-lg text-purple-600 dark:text-purple-400 transition-colors" title="Generate Flashcards"><BrainCircuit size={18} /></button>

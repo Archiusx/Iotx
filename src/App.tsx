@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Bot, FileText, LayoutDashboard, Globe, BrainCircuit, Settings, LogIn, Zap } from 'lucide-react';
+import { Bot, FileText, LayoutDashboard, Globe, BrainCircuit, Settings, LogIn, Zap, Activity } from 'lucide-react';
 import { Taskbar } from './components/Taskbar';
 import { StartMenu } from './components/StartMenu';
 import { Window } from './components/Window';
@@ -24,6 +24,7 @@ import { Notepad } from './components/apps/Notepad';
 import { SyllabusTracker } from './components/apps/SyllabusTracker';
 import { QuizGenerator } from './components/apps/QuizGenerator';
 import { EdgeBrowser } from './components/apps/EdgeBrowser';
+import { SystemMonitor } from './components/apps/SystemMonitor';
 
 const APPS: AppConfig[] = [
   { id: 'ai-tutor', name: 'AI Tutor', icon: <Bot />, component: AITutor },
@@ -31,6 +32,7 @@ const APPS: AppConfig[] = [
   { id: 'syllabus', name: 'Syllabus Tracker', icon: <LayoutDashboard />, component: SyllabusTracker },
   { id: 'browser', name: 'Edge Browser', icon: <Globe />, component: EdgeBrowser },
   { id: 'quiz', name: 'Quiz Gen', icon: <BrainCircuit />, component: QuizGenerator },
+  { id: 'system-monitor', name: 'System Monitor', icon: <Activity />, component: SystemMonitor },
   { id: 'settings', name: 'Settings', icon: <Settings />, component: () => <div className="p-10 text-center">Settings Mockup</div> },
 ];
 
