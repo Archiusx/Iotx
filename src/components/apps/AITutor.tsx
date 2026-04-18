@@ -9,7 +9,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
 import { db, handleFirestoreError, OperationType } from '@/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -309,7 +309,7 @@ export const AITutor: React.FC = () => {
             topic,
             type,
             data,
-            createdAt: new Date().toISOString()
+            createdAt: serverTimestamp()
           });
         } catch (error) {
           handleFirestoreError(error, OperationType.WRITE, path);

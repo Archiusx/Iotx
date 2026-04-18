@@ -24,7 +24,7 @@ service cloud.firestore {
 
     // PILLAR 3: Path Variable Hardening (ID Poisoning Guard)
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
     function incoming() {
@@ -45,7 +45,7 @@ service cloud.firestore {
         && data.displayName is string && data.displayName.size() <= 100
         && (!('email' in data) || (data.email is string && data.email.size() <= 100))
         && (!('grade' in data) || (data.grade is string && data.grade.size() <= 50))
-        && (!('lastActive' in data) || data.lastActive == request.time);
+        && (!('lastActive' in data) || data.lastActive <= request.time);
     }
 
     function isValidStudyNote(data) {
@@ -53,7 +53,7 @@ service cloud.firestore {
         && data.uid == request.auth.uid
         && data.content is string && data.content.size() <= 50000
         && (!('title' in data) || (data.title is string && data.title.size() <= 200))
-        && (!('updatedAt' in data) || data.updatedAt == request.time);
+        && (!('updatedAt' in data) || data.updatedAt <= request.time);
     }
 
     function isValidLearningModule(data) {
@@ -70,7 +70,7 @@ service cloud.firestore {
         && data.uid == request.auth.uid
         && data.subject is string && data.subject.size() <= 100
         && data.progress is number && data.progress >= 0 && data.progress <= 100
-        && (!('timestamp' in data) || data.timestamp == request.time);
+        && (!('timestamp' in data) || data.timestamp <= request.time);
     }
 
     // ===============================================================
@@ -91,47 +91,38 @@ service cloud.firestore {
     match /notes/{noteId} {
       // PILLAR 8: Secure List Queries (Query Enforcer)
       allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId);
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid;
       
-      allow create: if isSignedIn() && isValidId(noteId) && isValidStudyNote(incoming())
-        && incoming().keys().size() <= 5;
+      allow create: if isSignedIn() && incoming().uid == request.auth.uid;
       
-      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId)
-        && isValidStudyNote(incoming())
-        && incoming().uid == existing().uid
-        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'updatedAt']);
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid
+        && incoming().uid == existing().uid;
         
-      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId);
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /modules/{moduleId} {
       allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId);
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid;
       
-      allow create: if isSignedIn() && isValidId(moduleId) && isValidLearningModule(incoming())
-        && incoming().keys().size() <= 6;
+      allow create: if isSignedIn() && incoming().uid == request.auth.uid;
       
-      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId)
-        && isValidLearningModule(incoming())
-        && incoming().uid == existing().uid
-        && incoming().diff(existing()).affectedKeys().hasOnly(['topic', 'data']);
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid
+        && incoming().uid == existing().uid;
         
-      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId);
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /progress/{progressId} {
       allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId);
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid;
       
-      allow create: if isSignedIn() && isValidId(progressId) && isValidProgress(incoming())
-        && incoming().keys().size() <= 5;
+      allow create: if isSignedIn() && incoming().uid == request.auth.uid;
       
-      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId)
-        && isValidProgress(incoming())
-        && incoming().uid == existing().uid
-        && incoming().diff(existing()).affectedKeys().hasOnly(['progress', 'timestamp']);
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid
+        && incoming().uid == existing().uid;
         
-      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId);
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
   }
 }

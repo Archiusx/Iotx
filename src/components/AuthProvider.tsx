@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, handleFirestoreError, OperationType } from '@/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               uid: authenticatedUser.uid,
               displayName: authenticatedUser.displayName,
               email: authenticatedUser.email,
-              lastActive: new Date().toISOString()
+              lastActive: serverTimestamp()
             });
           }
           setUser(authenticatedUser);

@@ -3,7 +3,7 @@
  * Integrates with Firestore for real-time note saving and syncs context to the OS layer.
  */
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType } from '@/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '@/firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
@@ -54,11 +54,16 @@ export const Notepad: React.FC = () => {
     if (!user || !content.trim()) return;
     
     const path = 'notes';
+    console.log("NOTEPAD: Attempting cloud save...", { 
+      userUid: user.uid, 
+      authUid: auth.currentUser?.uid,
+      contentLength: content.length 
+    });
     try {
       await addDoc(collection(db, path), {
         uid: user.uid,
         content,
-        updatedAt: new Date().toISOString(),
+        updatedAt: serverTimestamp(),
         title: content.split('\n')[0].substring(0, 30) || 'Untitled Note'
       });
     } catch (error) {
