@@ -1,4 +1,5 @@
 {
+  // SYNC-OS TYPESCRIPT CONFIGURATION: Defines the compilation and type-checking rules for the kernel.
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,

@@ -1,3 +1,5 @@
+# SYNC-OS EXCLUSION RULES: Defines artifacts and secrets to be ignored by version control.
+# Ensures that local dependencies, build outputs, and sensitive environment variables are not persisted.
 node_modules/
 build/
 dist/
