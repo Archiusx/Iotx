@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS AUTH SHIELD: Orchestrates user identity and profile synchronization.
+ * Interfaces with Firebase Auth for secure session management and data isolation.
+ */
 import React, { useState, useEffect } from 'react';
 import { auth, db, handleFirestoreError, OperationType } from '@/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';

@@ -1,3 +1,8 @@
+/**
+ * SYNC-OS INTELLIGENCE CORE: The primary AI application.
+ * Manages Google Gemini integration, real-time workspace synthesis,
+ * persistent session memory, and diversity settings.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, BrainCircuit, FileText, CheckSquare, BookOpen, Zap, Mic, MicOff } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";

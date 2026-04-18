@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS NOTEPAD: A persistent, cloud-synced text editor.
+ * Integrates with Firestore for real-time note saving and syncs context to the OS layer.
+ */
 import React, { useState, useEffect } from 'react';
 import { db, handleFirestoreError, OperationType } from '@/firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';

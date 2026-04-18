@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS EDGE BROWSER: A high-fidelity web browsing simulator.
+ * Supports cross-reference URL analysis through the OS Intelligence Core.
+ */
 import React, { useState, useEffect } from 'react';
 import { Globe, ArrowLeft, ArrowRight, RotateCcw, Search, Sparkles, BrainCircuit } from 'lucide-react';
 

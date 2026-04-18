@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS QUIZ ENGINE: Automated assessment generation using Gemini AI.
+ * Transforms current session context into dynamic multiple-choice evaluations.
+ */
 import React, { useState, useEffect } from 'react';
 import { BrainCircuit, Send, CheckCircle, XCircle, RefreshCw, Zap } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";

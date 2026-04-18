@@ -1,3 +1,5 @@
+// SYNC-OS BUILD SYSTEM: Vite configuration for React development and production builds.
+// Includes Tailwind CSS, environment variable injection, and HMR safety gates for AI Studio.
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';

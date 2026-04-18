@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS SYLLABUS ANALYZER: Visualizes academic progress and course coverage.
+ * Tracks completion status and integrates with the OS study-mode layout.
+ */
 import React, { useEffect } from 'react';
 import { CheckCircle2, Circle, Clock, TrendingUp, BookOpen } from 'lucide-react';
 

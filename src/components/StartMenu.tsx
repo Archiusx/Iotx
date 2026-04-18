@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS START MENU: The central hub for application access and power controls.
+ * Grid-based launcher with Framer Motion animations for fluid workspace entry.
+ */
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, LayoutGrid, Settings, Power, User, Zap } from 'lucide-react';

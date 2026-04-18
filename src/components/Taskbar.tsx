@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS TASKBAR: System tray and application launcher controller.
+ * Manages active window icons, system status (Wifi, Battery), and Theme toggles.
+ */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { LayoutGrid, Search, Wifi, Volume2, Battery, ChevronUp, Sun, Moon, Zap } from 'lucide-react';

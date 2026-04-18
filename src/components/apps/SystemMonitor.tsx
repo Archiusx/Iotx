@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS HARDWARE MONITOR: Visualizes system resource utilization.
+ * Tracks memory allocation, workspace processing loads, and context sync status.
+ */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Activity, Database, Cpu, HardDrive, RefreshCw, Zap } from 'lucide-react';

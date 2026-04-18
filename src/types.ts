@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS SYSTEM API: Defines the blueprint and interfaces for the OS.
+ * Includes WindowState, AppId registries, and layout snapping states.
+ */
 import React from 'react';
 
 export type AppId = 'ai-tutor' | 'notepad' | 'browser' | 'syllabus' | 'quiz' | 'settings' | 'system-monitor';

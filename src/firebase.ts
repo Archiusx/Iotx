@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS PERSISTENCE: Firebase SDK initialization and utility functions.
+ * Manages Firestore Database connection and Authentication services.
+ */
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';

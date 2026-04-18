@@ -8,6 +8,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * SYNC-OS CORE KERNEL: The root application component.
+ * Responsible for window lifecycle management, Z-index layers, 
+ * workspace context scraping patterns, and the intelligence event loop.
+ */
 import React, { useState, useCallback, useEffect } from 'react';
 import { Bot, FileText, LayoutDashboard, Globe, BrainCircuit, Settings, LogIn, Zap, Activity } from 'lucide-react';
 import { Taskbar } from './components/Taskbar';

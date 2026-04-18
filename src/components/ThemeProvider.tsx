@@ -1,3 +1,7 @@
+/**
+ * SYNC-OS THEME ENGINE: Manages global visual states (Light/Dark mode).
+ * Syncs UI variables across the kernel and individual application shells.
+ */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';

@@ -1,3 +1,8 @@
+/**
+ * SYNC-OS WINDOW SHELL: The high-fidelity windowing container.
+ * Features Framer Motion powered dragging, resizing, and Aero-Snap logic.
+ * Implements the system-wide 'Sync-Scrape' context reporting mechanism.
+ */
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useDragControls, useMotionValue } from 'motion/react';
 import { X, Minus, Square, Copy } from 'lucide-react';
