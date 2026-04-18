@@ -14,7 +14,7 @@
  * workspace context scraping patterns, and the intelligence event loop.
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { Bot, FileText, LayoutDashboard, Globe, BrainCircuit, Settings, LogIn, Zap, Activity } from 'lucide-react';
+import { Bot, FileText, LayoutDashboard, Globe, BrainCircuit, Settings, LogIn, Rocket, Zap, Activity } from 'lucide-react';
 import { Taskbar } from './components/Taskbar';
 import { StartMenu } from './components/StartMenu';
 import { Window } from './components/Window';
@@ -256,10 +256,10 @@ function Desktop() {
               
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
                 <div className="bg-blue-600/90 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl flex items-center gap-4 scale-125 backdrop-blur-md border border-white/20">
-                  <Zap className="animate-pulse text-yellow-300" size={24} />
+                  <BrainCircuit className="animate-pulse text-cyan-200" size={24} />
                   <div className="flex flex-col">
                     <span className="text-lg tracking-tight">SyncOS Intelligence</span>
-                    <span className="text-[10px] opacity-70 font-mono uppercase tracking-widest">Scraping Global Workspace Context...</span>
+                    <span className="text-[10px] opacity-70 font-mono uppercase tracking-widest">Synthesizing Workspace Context...</span>
                   </div>
                 </div>
                 
@@ -302,7 +302,7 @@ function Desktop() {
             className="flex flex-col items-center gap-1 p-2 w-20 hover:bg-white/10 rounded transition-colors group"
           >
             <div className="w-10 h-10 text-white drop-shadow-md group-active:scale-90 transition-transform flex items-center justify-center bg-green-500/20 rounded-lg border border-white/20">
-              <Zap size={20} className="text-yellow-300" />
+              <Rocket size={20} className="text-green-300" />
             </div>
             <span className="text-[10px] text-white text-center font-medium drop-shadow-md">Launch All</span>
           </button>

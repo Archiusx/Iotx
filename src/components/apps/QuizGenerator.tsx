@@ -22,6 +22,7 @@ interface Question {
   question: string;
   options: string[];
   correctAnswer: number;
+  explanation: string;
 }
 
 export const QuizGenerator: React.FC = () => {
@@ -89,7 +90,7 @@ export const QuizGenerator: React.FC = () => {
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
-        contents: `Generate a 5-question multiple choice quiz about ${activeTopic}. Return as JSON.`,
+        contents: `Generate a 5-question multiple choice quiz about ${activeTopic}. For each question, provide an explanation or 'reason' for why the correct answer is right. Return as JSON.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -100,8 +101,9 @@ export const QuizGenerator: React.FC = () => {
                 question: { type: Type.STRING },
                 options: { type: Type.ARRAY, items: { type: Type.STRING } },
                 correctAnswer: { type: Type.INTEGER, description: "Index of the correct option (0-3)" },
+                explanation: { type: Type.STRING, description: "Detailed reason why the correct answer is correct" },
               },
-              required: ["question", "options", "correctAnswer"],
+              required: ["question", "options", "correctAnswer", "explanation"],
             },
           },
         },
@@ -224,12 +226,27 @@ export const QuizGenerator: React.FC = () => {
             </div>
 
             {selectedOption !== null && (
-              <button
-                onClick={nextQuestion}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
-              >
-                {currentQuestion === questions.length - 1 ? "Finish Quiz" : "Next Question"}
-              </button>
+              <div className="space-y-4">
+                <div className={cn(
+                  "p-4 rounded-xl text-sm leading-relaxed",
+                  selectedOption === questions[currentQuestion].correctAnswer 
+                    ? "bg-green-100/50 text-green-800 border border-green-200" 
+                    : "bg-blue-100/50 text-blue-800 border border-blue-200"
+                )}>
+                  <div className="flex items-center gap-2 font-bold mb-1 uppercase tracking-tight text-[10px]">
+                    <BrainCircuit size={14} />
+                    Learning Moment
+                  </div>
+                  {questions[currentQuestion].explanation}
+                </div>
+
+                <button
+                  onClick={nextQuestion}
+                  className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
+                >
+                  {currentQuestion === questions.length - 1 ? "Finish Quiz" : "Next Question"}
+                </button>
+              </div>
             )}
           </div>
         )}

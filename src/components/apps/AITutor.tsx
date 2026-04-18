@@ -4,7 +4,7 @@
  * persistent session memory, and diversity settings.
  */
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, BrainCircuit, FileText, CheckSquare, BookOpen, Zap, Mic, MicOff } from 'lucide-react';
+import { Send, Bot, User, Sparkles, BrainCircuit, FileText, CheckSquare, BookOpen, Zap, Mic, MicOff, Trash2 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
@@ -270,7 +270,7 @@ export const AITutor: React.FC = () => {
         }
       };
     } else {
-      prompt = `Generate a 3-question multiple choice test for the topic: ${topic}.
+      prompt = `Generate a 3-question multiple choice test for the topic: ${topic}. For each question, provide an explanation or 'reason' why the correct answer is correct.
       Use this REAL-TIME WORKSPACE CONTEXT if relevant:
       ${realTimeContext}`;
       schema = {
@@ -280,8 +280,10 @@ export const AITutor: React.FC = () => {
           properties: {
             question: { type: Type.STRING },
             options: { type: Type.ARRAY, items: { type: Type.STRING } },
-            correctIndex: { type: Type.INTEGER }
-          }
+            correctIndex: { type: Type.INTEGER },
+            explanation: { type: Type.STRING, description: "Detailed reason for the correct answer" }
+          },
+          required: ["question", "options", "correctIndex", "explanation"]
         }
       };
     }
@@ -387,7 +389,7 @@ export const AITutor: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-1.5">
-          <button onClick={() => setMessages([{ role: 'assistant', content: "Memory cleared. Workspace sync reset." }])} className="p-1.5 hover:bg-red-50 dark:hover:bg-white/10 rounded-lg text-red-500 transition-colors" title="Clear Memory"><Zap size={14} /></button>
+          <button onClick={() => setMessages([{ role: 'assistant', content: "Memory cleared. Workspace sync reset." }])} className="p-1.5 hover:bg-red-50 dark:hover:bg-white/10 rounded-lg text-red-500 transition-colors" title="Clear Memory"><Trash2 size={16} /></button>
           <button onClick={() => syncAnalyze()} className="p-1.5 hover:bg-yellow-50 dark:hover:bg-white/10 rounded-lg text-yellow-600 dark:text-yellow-400 transition-colors" title="Sync-Analyze Workspace"><BrainCircuit size={18} /></button>
           <button onClick={enableStudyMode} className="p-1.5 hover:bg-orange-50 dark:hover:bg-white/10 rounded-lg text-orange-600 dark:text-orange-400 transition-colors" title="Study Mode"><BookOpen size={18} /></button>
           <button onClick={() => generateModule('pointwise', 'Current Topic')} className="p-1.5 hover:bg-blue-50 dark:hover:bg-white/10 rounded-lg text-blue-600 dark:text-blue-400 transition-colors" title="Generate Notes"><FileText size={18} /></button>
@@ -434,13 +436,25 @@ export const AITutor: React.FC = () => {
                       </div>
                     )}
                     {msg.moduleData.type === 'test' && (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {msg.moduleData.data.map((q: any, j: number) => (
-                          <div key={j} className="p-2 bg-white dark:bg-gray-800 rounded border dark:border-white/10 text-[11px]">
+                          <div key={j} className="p-2 bg-white dark:bg-gray-800 rounded border dark:border-white/10 text-[11px] space-y-2">
                             <p className="font-bold">{q.question}</p>
-                            <div className="mt-1 grid grid-cols-1 gap-1">
-                              {q.options?.map((o: string, k: number) => <div key={k} className="px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded">{o}</div>)}
+                            <div className="grid grid-cols-1 gap-1">
+                              {q.options?.map((o: string, k: number) => (
+                                <div key={k} className={cn(
+                                  "px-2 py-1 rounded transition-colors",
+                                  k === q.correctIndex ? "bg-green-500/10 text-green-600 dark:text-green-400 font-medium" : "bg-gray-50 dark:bg-gray-900"
+                                )}>
+                                  {o}
+                                </div>
+                              ))}
                             </div>
+                            {q.explanation && (
+                              <div className="mt-2 p-2 bg-blue-500/5 rounded border border-blue-500/10 text-[10px] italic text-blue-600 dark:text-blue-400">
+                                <strong>Reason:</strong> {q.explanation}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

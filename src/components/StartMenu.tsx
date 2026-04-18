@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, LayoutGrid, Settings, Power, User, Zap } from 'lucide-react';
+import { Search, LayoutGrid, Settings, Power, User, Activity, Zap, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AppConfig } from '@/types';
 
@@ -45,7 +45,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ isOpen, apps, onLaunch }) 
               onClick={syncWorkspace}
               className="px-4 py-2 bg-blue-600 text-white rounded-full flex items-center gap-2 font-bold text-xs hover:bg-blue-700 transition-all shadow-lg active:scale-95"
             >
-              <Zap size={14} className="text-yellow-300" />
+              <Activity size={14} className="text-blue-200" />
               Sync
             </button>
           </div>
@@ -57,8 +57,9 @@ export const StartMenu: React.FC<StartMenuProps> = ({ isOpen, apps, onLaunch }) 
               <div className="flex gap-2">
                 <button 
                   onClick={() => apps.forEach(app => onLaunch(app.id))}
-                  className="text-xs bg-blue-500/20 dark:bg-blue-500/10 border border-blue-500/30 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors text-blue-700 dark:text-blue-300"
+                  className="text-xs bg-blue-500/20 dark:bg-blue-500/10 border border-blue-500/30 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors text-blue-700 dark:text-blue-300 flex items-center gap-1.5"
                 >
+                  <Rocket size={12} />
                   Launch All
                 </button>
                 <button className="text-xs bg-white/40 dark:bg-white/10 px-2 py-1 rounded hover:bg-white/60 dark:hover:bg-white/20 transition-colors dark:text-white">All apps &gt;</button>
