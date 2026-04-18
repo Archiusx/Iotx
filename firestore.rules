@@ -1,4 +1,6 @@
 rules_version = '2';
+// SYNC-OS SECURITY ARCHITECTURE: Hardened Firestore Security Rules.
+// Implements Attribute-Based Access Control (ABAC) and ID Poisoning Guard.
 service cloud.firestore {
   match /databases/{database}/documents {
     

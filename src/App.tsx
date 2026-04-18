@@ -57,10 +57,12 @@ function Desktop() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Intelligence Context Scraping: Listens for requests to aggregate cross-app data
   React.useEffect(() => {
     const handleRequestContext = () => {
       if (scanningTimeoutRef.current) clearTimeout(scanningTimeoutRef.current);
       setIsScanning(true);
+      // Status visualization timeout
       scanningTimeoutRef.current = setTimeout(() => setIsScanning(false), 1500);
     };
     window.addEventListener('syncos-request-context', handleRequestContext);
@@ -70,6 +72,7 @@ function Desktop() {
     };
   }, []);
 
+  // Primary Application Launcher: Manages window lifecycle and Z-stacking
   const launchApp = useCallback((id: AppId) => {
     setIsStartOpen(false);
     
@@ -169,6 +172,7 @@ function Desktop() {
     setWindows(prev => prev.map(w => ({ ...w, isMinimized: true })));
   };
 
+  // Aero-Snap & Window Tiling Logic: Orchestrates complex multi-window layouts
   const tileWindows = () => {
     setWindows(prev => {
       const openWindows = prev.filter(w => !w.isMinimized);
@@ -179,7 +183,7 @@ function Desktop() {
         if (w.isMinimized) return w;
         const index = openWindows.findIndex(ow => ow.id === w.id);
         
-        // Simple grid tiling
+        // Dynamic Grid Calculation for diverse monitor sizes
         const cols = Math.ceil(Math.sqrt(count));
         const rows = Math.ceil(count / cols);
         const width = 100 / cols;

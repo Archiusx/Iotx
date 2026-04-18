@@ -117,11 +117,12 @@ export const AITutor: React.FC = () => {
     window.dispatchEvent(new CustomEvent('syncos-study-mode'));
   };
 
+  // Intelligent Workspace Analysis: Aggregates content from all open windows in real-time
   const syncAnalyze = async (customPrompt?: string) => {
     if (isLoading) return;
     setIsLoading(true);
     
-    // Add a temporary "system" message for status
+    // UI Feedback: Inject localized analysis status
     const statusMsgId = Date.now();
     setMessages(prev => [...prev, { 
       role: 'assistant', 
@@ -143,6 +144,7 @@ export const AITutor: React.FC = () => {
     const globalContext = contextData.map(c => `[WINDOW: ${c.name}]\n${c.content}`).join("\n\n");
 
     try {
+      // Gemini LLM integration: Primary Intelligence Core
       const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
         contents: customPrompt 
