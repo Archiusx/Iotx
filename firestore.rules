@@ -1,60 +1,137 @@
 rules_version = '2';
-// SYNC-OS SECURITY ARCHITECTURE: Hardened Firestore Security Rules.
-// Implements Attribute-Based Access Control (ABAC) and ID Poisoning Guard.
+
+// SYNC-OS "FORTRESS" SECURITY ARCHITECTURE
+// Evaluates Identity, Integrity, and State through the Eight Pillars of Hardened Rules.
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Fields: uid, displayName, email, grade, lastActive
-    //
-    // Collection: notes
-    // Fields: uid, title, content, updatedAt
-    //
-    // Collection: modules
-    // Fields: uid, topic, type, data, createdAt
-    //
-    // Collection: progress
-    // Fields: uid, subject, progress, timestamp
-    //
-    // ===============================================================
 
-    function isAuthenticated() {
+    // PILLAR 0: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // GLOBAL HELPERS
+    // ===============================================================
+    
+    function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+      return isSignedIn() && request.auth.uid == uid;
     }
 
-    function isValidString(val, maxLen) {
-      return val is string && val.size() <= maxLen;
+    // PILLAR 3: Path Variable Hardening (ID Poisoning Guard)
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ===============================================================
+    // VALIDATION BLUEPRINT HELPERS
+    // ===============================================================
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName']) 
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() <= 100
+        && (!('email' in data) || (data.email is string && data.email.size() <= 100))
+        && (!('grade' in data) || (data.grade is string && data.grade.size() <= 50))
+        && (!('lastActive' in data) || data.lastActive == request.time);
+    }
+
+    function isValidStudyNote(data) {
+      return data.keys().hasAll(['uid', 'content'])
+        && data.uid == request.auth.uid
+        && data.content is string && data.content.size() <= 50000
+        && (!('title' in data) || (data.title is string && data.title.size() <= 200))
+        && (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    function isValidLearningModule(data) {
+      return data.keys().hasAll(['uid', 'topic', 'type', 'data'])
+        && data.uid == request.auth.uid
+        && data.topic is string && data.topic.size() <= 200
+        && data.type in ['pointwise', 'flashcards', 'test']
+        && data.data is map
+        && (!('createdAt' in data) || data.createdAt <= request.time);
+    }
+
+    function isValidProgress(data) {
+      return data.keys().hasAll(['uid', 'subject', 'progress'])
+        && data.uid == request.auth.uid
+        && data.subject is string && data.subject.size() <= 100
+        && data.progress is number && data.progress >= 0 && data.progress <= 100
+        && (!('timestamp' in data) || data.timestamp == request.time);
+    }
+
+    // ===============================================================
+    // COLLECTION ACCESS RULES
+    // ===============================================================
 
     match /users/{uid} {
-      allow read: if isOwner(uid);
-      allow write: if isOwner(uid) && request.resource.data.uid == uid;
+      allow get: if isOwner(uid) && isValidId(uid);
+      allow create: if isOwner(uid) && isValidId(uid) && isValidUserProfile(incoming())
+        && incoming().keys().size() <= 6;
+      allow update: if isOwner(uid) && isValidId(uid) && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'grade', 'lastActive'])
+        );
     }
 
     match /notes/{noteId} {
-      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      // PILLAR 8: Secure List Queries (Query Enforcer)
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId);
+      
+      allow create: if isSignedIn() && isValidId(noteId) && isValidStudyNote(incoming())
+        && incoming().keys().size() <= 5;
+      
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId)
+        && isValidStudyNote(incoming())
+        && incoming().uid == existing().uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'updatedAt']);
+        
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(noteId);
     }
 
     match /modules/{moduleId} {
-      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId);
+      
+      allow create: if isSignedIn() && isValidId(moduleId) && isValidLearningModule(incoming())
+        && incoming().keys().size() <= 6;
+      
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId)
+        && isValidLearningModule(incoming())
+        && incoming().uid == existing().uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['topic', 'data']);
+        
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(moduleId);
     }
 
     match /progress/{progressId} {
-      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId);
+      
+      allow create: if isSignedIn() && isValidId(progressId) && isValidProgress(incoming())
+        && incoming().keys().size() <= 5;
+      
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId)
+        && isValidProgress(incoming())
+        && incoming().uid == existing().uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['progress', 'timestamp']);
+        
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid && isValidId(progressId);
     }
   }
 }
