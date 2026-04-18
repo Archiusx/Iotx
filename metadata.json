@@ -1,4 +1,5 @@
 {
+  "project": "SYNC-OS: Intelligence-Driven Academic Workspace",
   "name": "SyncOS",
   "description": "A web-based educational workspace with a Windows 11-like UI, powered by Gemini AI for personalized student learning.",
   "requestFramePermissions": ["microphone"],

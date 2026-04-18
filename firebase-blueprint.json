@@ -1,4 +1,5 @@
 {
+  "comment": "SYNC-OS DATA ARCHITECTURE: Defines the NoSQL entity relationships and Firestore collection schemas. Used for synchronizing application data shapes with security rules.",
   "entities": {
     "UserProfile": {
       "title": "User Profile",
